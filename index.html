@@ -328,14 +328,27 @@
     <button class="close-btn" onclick="boxOpen()">✕</button>
 
     <div class="tool-card">
-      <div class="tool-title">💬 チャット(β版)</div>
-      <div class="chat-container">
+      <div class="tool-title" id="chat-header-title">💬 チャットルーム (未入室)</div>
+      
+      <!-- 部屋作成・入室フォーム -->
+      <div id="room-login-area" style="display:flex; flex-direction:column; gap:6px;">
+        <input type="text" id="room-id-input" class="chat-in" placeholder="部屋ID">
+        <input type="password" id="room-pass-input" class="chat-in" placeholder="パスワード">
+        <div style="display:flex; gap:4px;">
+          <button class="btn" style="flex:1;" onclick="createRoom()">部屋を作成</button>
+          <button class="btn btn-s" style="flex:1;" onclick="joinRoom()">部屋に入る</button>
+        </div>
+      </div>
+
+      <!-- チャット本体（入室後に表示） -->
+      <div class="chat-container" id="chat-main-area" style="display:none; margin-top:8px;">
         <div id="chat-messages" class="chat-messages"></div>
         <div class="chat-input-row">
           <input type="text" id="chat-name" class="chat-in" placeholder="名前" style="width: 30%;">
           <input type="text" id="chat-text" class="chat-in" placeholder="メッセージ" style="width: 50%;">
           <button class="btn" onclick="sendChatMessage()">送信</button>
         </div>
+        <button class="btn" style="background:#e91e63; margin-top:4px; font-size:0.75rem;" onclick="leaveRoom()">部屋を出る</button>
       </div>
     </div>
 
@@ -450,6 +463,8 @@
 
     const $ = id => document.getElementById(id);
     let tInt, tLeft = 1500, pickerSec = 1500, swInt, swTime = 0, cur = '0';
+    let currentRoomId = null;
+    let unsubscribeChat = null;
 
     const alarmAudio = new Audio('alarm.mp3');
     alarmAudio.loop = true;
@@ -595,7 +610,91 @@
       $('screen').value = cur;
     }
 
+    // チャットルーム関連の処理
+    async function createRoom() {
+      const roomId = $('room-id-input').value.trim();
+      const password = $('room-pass-input').value;
+      if (!roomId || !password) {
+        alert('部屋IDとパスワードを入力してください');
+        return;
+      }
+
+      const roomRef = db.collection('rooms').doc(roomId);
+      const doc = await roomRef.get();
+      if (doc.exists) {
+        alert('この部屋IDはすでに存在します。別のIDにするか「部屋に入る」をお試しください。');
+        return;
+      }
+
+      await roomRef.set({ password: password });
+      alert('部屋を作成しました！入室します。');
+      enterRoom(roomId);
+    }
+
+    async function joinRoom() {
+      const roomId = $('room-id-input').value.trim();
+      const password = $('room-pass-input').value;
+      if (!roomId || !password) {
+        alert('部屋IDとパスワードを入力してください');
+        return;
+      }
+
+      const roomRef = db.collection('rooms').doc(roomId);
+      const doc = await roomRef.get();
+      if (!doc.exists) {
+        alert('指定された部屋が見つかりません');
+        return;
+      }
+
+      if (doc.data().password !== password) {
+        alert('パスワードが間違っています');
+        return;
+      }
+
+      enterRoom(roomId);
+    }
+
+    function enterRoom(roomId) {
+      currentRoomId = roomId;
+      $('room-login-area').style.display = 'none';
+      $('chat-main-area').style.display = 'flex';
+      $('chat-header-title').innerText = `💬 部屋: ${roomId}`;
+
+      // 既存のリスナーがあれば解除
+      if (unsubscribeChat) unsubscribeChat();
+
+      // ルームごとのメッセージを監視
+      unsubscribeChat = db.collection('rooms').doc(roomId).collection('messages')
+        .orderBy('createdAt', 'asc')
+        .onSnapshot((snapshot) => {
+          const chatMessages = $('chat-messages');
+          chatMessages.innerHTML = '';
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            const div = document.createElement('div');
+            div.className = 'chat-msg-item';
+            div.innerHTML = `<strong>${escapeHTML(data.name)}:</strong> ${escapeHTML(data.text)}`;
+            chatMessages.appendChild(div);
+          });
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+    }
+
+    function leaveRoom() {
+      if (unsubscribeChat) {
+        unsubscribeChat();
+        unsubscribeChat = null;
+      }
+      currentRoomId = null;
+      $('chat-main-area').style.display = 'none';
+      $('room-login-area').style.display = 'flex';
+      $('chat-header-title').innerText = '💬 チャットルーム (未入室)';
+      $('room-id-input').value = '';
+      $('room-pass-input').value = '';
+    }
+
     function sendChatMessage() {
+      if (!currentRoomId) return;
       const nameInput = $('chat-name');
       const textInput = $('chat-text');
       
@@ -604,7 +703,7 @@
       
       if (!text) return;
 
-      db.collection('messages').add({
+      db.collection('rooms').doc(currentRoomId).collection('messages').add({
         name: name,
         text: text,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -616,19 +715,6 @@
         console.error("送信エラー: ", error);
       });
     }
-
-    db.collection('messages').orderBy('createdAt', 'asc').onSnapshot((snapshot) => {
-      const chatMessages = $('chat-messages');
-      chatMessages.innerHTML = '';
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const div = document.createElement('div');
-        div.className = 'chat-msg-item';
-        div.innerHTML = `<strong>${escapeHTML(data.name)}:</strong> ${escapeHTML(data.text)}`;
-        chatMessages.appendChild(div);
-      });
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    });
 
     function escapeHTML(str) {
       return str.replace(/[&'`<>"]/g, (match) => {
