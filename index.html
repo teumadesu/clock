@@ -27,7 +27,7 @@
       font-size: 3.5rem;
       font-weight: bold;
       text-align: center;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       color: #fff;
     }
     .time-picker {
@@ -114,9 +114,22 @@
     .menu-tab {
       position: fixed;
       right: 0;
-      top: 50%;
+      top: 42%;
       transform: translateY(-50%);
       background: rgba(0, 0, 0, 0.6);
+      padding: 10px 12px;
+      border-radius: 16px 0 0 16px;
+      cursor: pointer;
+      writing-mode: vertical-rl;
+      font-size: 0.95rem;
+      z-index: 15;
+    }
+    .timer-tab {
+      position: fixed;
+      right: 0;
+      top: 58%;
+      transform: translateY(-50%);
+      background: rgba(33, 150, 243, 0.7);
       padding: 10px 12px;
       border-radius: 16px 0 0 16px;
       cursor: pointer;
@@ -269,8 +282,7 @@
     }
     @media (max-width: 480px) {
       body {
-        align-items: flex-start;
-        padding-top: 20px;
+        align-items: center;
       }
       .container {
         padding: 20px;
@@ -302,47 +314,16 @@
     <div class="divider"></div>
     <div class="timer-display" id="t-clock">25:00</div>
     
-    <div class="time-picker">
-      <div class="time-col">
-        <button class="picker-btn" onclick="adjustTime(600)">▲</button>
-        <span class="picker-val" id="p-min10">2</span>
-        <button class="picker-btn" onclick="adjustTime(-600)">▼</button>
-        <span class="picker-label">10分</span>
-      </div>
-      <div class="time-col">
-        <button class="picker-btn" onclick="adjustTime(60)">▲</button>
-        <span class="picker-val" id="p-min1">5</span>
-        <button class="picker-btn" onclick="adjustTime(-60)">▼</button>
-        <span class="picker-label">1分</span>
-      </div>
-      <div class="time-col">
-        <span style="font-size:1.5rem; font-weight:bold; height:28px; display:flex; align-items:center;">:</span>
-        <span style="height:28px;"></span>
-        <span style="height:28px;"></span>
-      </div>
-      <div class="time-col">
-        <button class="picker-btn" onclick="adjustTime(10)">▲</button>
-        <span class="picker-val" id="p-sec10">0</span>
-        <button class="picker-btn" onclick="adjustTime(-10)">▼</button>
-        <span class="picker-label">10秒</span>
-      </div>
-      <div class="time-col">
-        <button class="picker-btn" onclick="adjustTime(1)">▲</button>
-        <span class="picker-val" id="p-sec1">0</span>
-        <button class="picker-btn" onclick="adjustTime(-1)">▼</button>
-        <span class="picker-label">1秒</span>
-      </div>
-    </div>
-
     <div class="input-box">
-      <button class="btn" onclick="setT()">セット</button>
       <button class="btn btn-s" id="s-btn" onclick="runT()">スタート</button>
       <button class="btn" style="background:#e91e63; display:none;" id="stop-alarm-btn" onclick="stopAlarm()">音を止める</button>
     </div>
   </div>
 
   <div class="menu-tab" onclick="boxOpen()">⚙️ ツール</div>
+  <div class="timer-tab" onclick="timerBoxOpen()">⏳ タイマー時間変更</div>
 
+  <!-- ツールサイドバー -->
   <div class="sidebar" id="box">
     <button class="close-btn" onclick="boxOpen()">✕</button>
 
@@ -413,6 +394,46 @@
     </div>
   </div>
 
+  <!-- タイマー時間変更サイドバー -->
+  <div class="sidebar" id="timer-box">
+    <button class="close-btn" onclick="timerBoxOpen()">✕</button>
+    <div class="tool-card">
+      <div class="tool-title">⏳ タイマー時間設定</div>
+      <div class="time-picker" style="margin: 15px 0;">
+        <div class="time-col">
+          <button class="picker-btn" onclick="adjustTime(600)">▲</button>
+          <span class="picker-val" id="p-min10">2</span>
+          <button class="picker-btn" onclick="adjustTime(-600)">▼</button>
+          <span class="picker-label">10分</span>
+        </div>
+        <div class="time-col">
+          <button class="picker-btn" onclick="adjustTime(60)">▲</button>
+          <span class="picker-val" id="p-min1">5</span>
+          <button class="picker-btn" onclick="adjustTime(-60)">▼</button>
+          <span class="picker-label">1分</span>
+        </div>
+        <div class="time-col">
+          <span style="font-size:1.5rem; font-weight:bold; height:28px; display:flex; align-items:center;">:</span>
+          <span style="height:28px;"></span>
+          <span style="height:28px;"></span>
+        </div>
+        <div class="time-col">
+          <button class="picker-btn" onclick="adjustTime(10)">▲</button>
+          <span class="picker-val" id="p-sec10">0</span>
+          <button class="picker-btn" onclick="adjustTime(-10)">▼</button>
+          <span class="picker-label">10秒</span>
+        </div>
+        <div class="time-col">
+          <button class="picker-btn" onclick="adjustTime(1)">▲</button>
+          <span class="picker-val" id="p-sec1">0</span>
+          <button class="picker-btn" onclick="adjustTime(-1)">▼</button>
+          <span class="picker-label">1秒</span>
+        </div>
+      </div>
+      <button class="btn" style="width:100%;" onclick="setT(); timerBoxOpen();">セットする</button>
+    </div>
+  </div>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDoiks0JByNZN4zkT4F-trhHw_ysa6LPSY",
@@ -428,13 +449,17 @@
     const db = firebase.firestore();
 
     const $ = id => document.getElementById(id);
-    let tInt, tLeft = 1500, pickerSec = 1500, swInt, swTime = 0, cur = '0', auds = {};
+    let tInt, tLeft = 1500, pickerSec = 1500, swInt, swTime = 0, cur = '0';
 
     const alarmAudio = new Audio('alarm.mp3');
     alarmAudio.loop = true;
 
     function boxOpen() {
       $('box').classList.toggle('open');
+    }
+
+    function timerBoxOpen() {
+      $('timer-box').classList.toggle('open');
     }
 
     function upClock() {
