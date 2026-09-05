@@ -30,47 +30,55 @@
       margin-bottom: 10px;
       color: #fff;
     }
-    .input-box {
+    .time-picker {
       display: flex;
-      gap: 6px;
       justify-content: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    .time-col {
+      display: flex;
+      flex-direction: column;
       align-items: center;
-      flex-wrap: wrap;
+      gap: 4px;
     }
-    .t-input {
-      width: 45px;
+    .picker-btn {
       background: rgba(255, 255, 255, 0.2);
-      border: 1px solid #fff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
       color: #fff;
-      border-radius: 4px;
-      text-align: center;
-      font-size: 1rem;
-      padding: 2px;
-    }
-    .preset-box {
-      display: flex;
-      gap: 5px;
-      justify-content: center;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-    .preset-btn {
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      color: #fff;
-      padding: 4px 8px;
+      width: 36px;
+      height: 28px;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-    .preset-btn:active {
-      background: rgba(255, 255, 255, 0.4);
+    .picker-btn:active {
+      background: rgba(255, 255, 255, 0.5);
+    }
+    .picker-val {
+      font-size: 1.5rem;
+      font-weight: bold;
+      width: 36px;
+      text-align: center;
+    }
+    .picker-label {
+      font-size: 0.75rem;
+      opacity: 0.8;
+    }
+    .input-box {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
     }
     .btn {
       background: #4caf50;
       border: none;
       color: #fff;
-      padding: 6px 12px;
+      padding: 8px 16px;
       border-radius: 4px;
       cursor: pointer;
       font-size: 0.9rem;
@@ -94,9 +102,9 @@
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
     .container {
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.4);
       backdrop-filter: blur(10px);
-      padding: 35px;
+      padding: 30px;
       border-radius: 16px;
       width: 360px;
       max-width: 90vw;
@@ -260,21 +268,21 @@
       width: 90%;
     }
     @media (max-width: 480px) {
+      body {
+        align-items: flex-start;
+        padding-top: 20px;
+      }
       .container {
         padding: 20px;
-        width: 100%;
-        border-radius: 0;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        background: rgba(0, 0, 0, 0.65);
+        width: 92vw;
+        border-radius: 16px;
+        background: rgba(0, 0, 0, 0.4);
       }
       .clock {
-        font-size: 3.2rem;
+        font-size: 3rem;
       }
       .timer-display {
-        font-size: 3rem;
+        font-size: 2.8rem;
       }
       .kiyaku {
         display: none;
@@ -293,16 +301,40 @@
     <div class="clock" id="c-disp"></div>
     <div class="divider"></div>
     <div class="timer-display" id="t-clock">25:00</div>
-    <div class="preset-box">
-      <button class="preset-btn" onclick="addTime(30)">+30秒</button>
-      <button class="preset-btn" onclick="addTime(60)">+1分</button>
-      <button class="preset-btn" onclick="addTime(300)">+5分</button>
-      <button class="preset-btn" onclick="addTime(600)">+10分</button>
-      <button class="preset-btn" onclick="resetTimerInput()">リセット</button>
+    
+    <div class="time-picker">
+      <div class="time-col">
+        <button class="picker-btn" onclick="adjustTime(600)">▲</button>
+        <span class="picker-val" id="p-min10">2</span>
+        <button class="picker-btn" onclick="adjustTime(-600)">▼</button>
+        <span class="picker-label">10分</span>
+      </div>
+      <div class="time-col">
+        <button class="picker-btn" onclick="adjustTime(60)">▲</button>
+        <span class="picker-val" id="p-min1">5</span>
+        <button class="picker-btn" onclick="adjustTime(-60)">▼</button>
+        <span class="picker-label">1分</span>
+      </div>
+      <div class="time-col">
+        <span style="font-size:1.5rem; font-weight:bold; height:28px; display:flex; align-items:center;">:</span>
+        <span style="height:28px;"></span>
+        <span style="height:28px;"></span>
+      </div>
+      <div class="time-col">
+        <button class="picker-btn" onclick="adjustTime(10)">▲</button>
+        <span class="picker-val" id="p-sec10">0</span>
+        <button class="picker-btn" onclick="adjustTime(-10)">▼</button>
+        <span class="picker-label">10秒</span>
+      </div>
+      <div class="time-col">
+        <button class="picker-btn" onclick="adjustTime(1)">▲</button>
+        <span class="picker-val" id="p-sec1">0</span>
+        <button class="picker-btn" onclick="adjustTime(-1)">▼</button>
+        <span class="picker-label">1秒</span>
+      </div>
     </div>
+
     <div class="input-box">
-      <input type="number" id="t-min" class="t-input" value="25" min="0"><span>分</span>
-      <input type="number" id="t-sec" class="t-input" value="0" min="0" max="59"><span>秒</span>
       <button class="btn" onclick="setT()">セット</button>
       <button class="btn btn-s" id="s-btn" onclick="runT()">スタート</button>
       <button class="btn" style="background:#e91e63; display:none;" id="stop-alarm-btn" onclick="stopAlarm()">音を止める</button>
@@ -396,7 +428,7 @@
     const db = firebase.firestore();
 
     const $ = id => document.getElementById(id);
-    let tInt, tLeft = 1500, swInt, swTime = 0, cur = '0', auds = {};
+    let tInt, tLeft = 1500, pickerSec = 1500, swInt, swTime = 0, cur = '0', auds = {};
 
     const alarmAudio = new Audio('alarm.mp3');
     alarmAudio.loop = true;
@@ -413,43 +445,35 @@
     setInterval(upClock, 1000);
     upClock();
 
+    function updatePickerDisplay() {
+      if (pickerSec < 0) pickerSec = 0;
+      if (pickerSec > 5999) pickerSec = 5999;
+      const m = Math.floor(pickerSec / 60);
+      const s = pickerSec % 60;
+      $('p-min10').innerText = Math.floor(m / 10);
+      $('p-min1').innerText = m % 10;
+      $('p-sec10').innerText = Math.floor(s / 10);
+      $('p-sec1').innerText = s % 10;
+    }
+
+    function adjustTime(amount) {
+      if (tInt) {
+        clearInterval(tInt);
+        tInt = null;
+        $('s-btn').innerText = 'スタート';
+      }
+      pickerSec += amount;
+      updatePickerDisplay();
+    }
+
     function setT() {
       if (tInt) {
         clearInterval(tInt);
         tInt = null;
         $('s-btn').innerText = 'スタート';
       }
-      const m = parseInt($('t-min').value) || 0;
-      const s = parseInt($('t-sec').value) || 0;
-      tLeft = (m * 60) + s;
+      tLeft = pickerSec;
       dispT();
-    }
-
-    function addTime(secs) {
-      if (tInt) {
-        clearInterval(tInt);
-        tInt = null;
-        $('s-btn').innerText = 'スタート';
-      }
-      tLeft += secs;
-      updateInputsFromTLeft();
-      dispT();
-    }
-
-    function resetTimerInput() {
-      if (tInt) {
-        clearInterval(tInt);
-        tInt = null;
-        $('s-btn').innerText = 'スタート';
-      }
-      tLeft = 0;
-      updateInputsFromTLeft();
-      dispT();
-    }
-
-    function updateInputsFromTLeft() {
-      $('t-min').value = Math.floor(tLeft / 60);
-      $('t-sec').value = tLeft % 60;
     }
 
     function dispT() {
@@ -463,7 +487,7 @@
         $('s-btn').innerText = 'スタート';
       } else {
         if (tLeft <= 0) {
-          setT();
+          tLeft = pickerSec;
         }
         if (tLeft <= 0) return;
         $('s-btn').innerText = '一時停止';
@@ -471,7 +495,6 @@
           if (tLeft > 0) {
             tLeft--;
             dispT();
-            updateInputsFromTLeft();
           } else {
             clearInterval(tInt);
             tInt = null;
