@@ -344,7 +344,7 @@
 <body>
 
   <div class="kiyaku" id="naiyo">
-    <p>※当サイトのサービスを利用した場合、利用規約に同意したものと見なします<br>※チャット以外のデータはお使いの端末（ブラウザ）に安全に保存されます</p>
+    <p>※当サイトのサービスを利用した場合、利用規約に同意したものと見なします</p>
   </div>
 
   <div class="container" id="panel">
@@ -366,7 +366,7 @@
     <button class="close-btn" onclick="boxOpen()">✕</button>
 
     <div class="tool-card">
-      <div class="tool-title" id="chat-header-title">💬 チャットルーム (未入室)</div>
+      <div class="tool-title" id="chat-header-title">チャット (未入室)[β]</div>
       
       <div id="room-login-area" style="display:flex; flex-direction:column; gap:6px;">
         <input type="text" id="room-id-input" class="chat-in" placeholder="部屋ID">
@@ -392,13 +392,13 @@
     </div>
 
     <div class="tool-card">
-      <div class="tool-title">📝 メモ帳 (端末内保存)</div>
+      <div class="tool-title">メモ帳 (不安定)</div>
       <textarea class="note" id="note" oninput="saveN()"></textarea>
       <div class="w-count" id="w-count">0 文字</div>
     </div>
 
     <div class="tool-card">
-      <div class="tool-title">✅ やることリスト (端末内保存)</div>
+      <div class="tool-title">やることリスト </div>
       <div class="todo-row">
         <input type="text" id="todo-input" class="todo-in" placeholder="新しいタスク...">
         <button class="btn" style="padding: 7px 12px;" onclick="addTodo()">追加</button>
@@ -407,7 +407,7 @@
     </div>
 
     <div class="tool-card">
-      <div class="tool-title">⏱️ ストップウォッチ</div>
+      <div class="tool-title">ストップウォッチ</div>
       <div class="sw-disp" id="sw-clock">00:00.0</div>
       <div style="display:flex;justify-content:center;gap:8px;">
         <button class="btn" id="sw-btn" onclick="toggleSW()">スタート</button>
@@ -416,7 +416,7 @@
     </div>
 
     <div class="tool-card">
-      <div class="tool-title">🧮 電卓</div>
+      <div class="tool-title">電卓</div>
       <input type="text" class="screen" id="screen" readonly value="0">
       <div class="c-grid">
         <button class="c-btn" onclick="press('C')">C</button>
@@ -446,7 +446,7 @@
   <div class="sidebar" id="timer-box">
     <button class="close-btn" onclick="timerBoxOpen()">✕</button>
     <div class="tool-card">
-      <div class="tool-title">⏳ タイマー時間設定</div>
+      <div class="tool-title">タイマー設定</div>
       <div class="time-picker" style="margin: 15px 0;">
         <div class="time-col">
           <button class="picker-btn" onclick="adjustTime(600)">▲</button>
@@ -745,7 +745,7 @@
       currentRoomId = roomId;
       $('room-login-area').style.display = 'none';
       $('chat-main-area').style.display = 'flex';
-      $('chat-header-title').innerText = `💬 部屋: ${roomId}`;
+      $('chat-header-title').innerText = `部屋: ${roomId}`;
 
       if (isOwner) {
         $('delete-room-btn').style.display = 'block';
@@ -779,7 +779,7 @@
       currentRoomId = null;
       $('chat-main-area').style.display = 'none';
       $('room-login-area').style.display = 'flex';
-      $('chat-header-title').innerText = '💬 チャットルーム (未入室)';
+      $('chat-header-title').innerText = 'チャットルーム (未入室)';
       $('room-id-input').value = '';
       $('room-pass-input').value = '';
       $('delete-room-btn').style.display = 'none';
