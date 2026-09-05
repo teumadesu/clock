@@ -348,7 +348,10 @@
           <input type="text" id="chat-text" class="chat-in" placeholder="メッセージ" style="width: 50%;">
           <button class="btn" onclick="sendChatMessage()">送信</button>
         </div>
-        <button class="btn" style="background:#e91e63; margin-top:4px; font-size:0.75rem;" onclick="leaveRoom()">部屋を出る</button>
+        <div style="display:flex; gap:4px; margin-top:4px;">
+          <button class="btn" style="background:#e91e63; flex:1; font-size:0.75rem;" onclick="leaveRoom()">部屋を出る</button>
+          <button class="btn" style="background:#d32f2f; flex:1; font-size:0.75rem; display:none;" id="delete-room-btn" onclick="deleteRoom()">部屋を削除</button>
+        </div>
       </div>
     </div>
 
@@ -465,6 +468,13 @@
     let tInt, tLeft = 1500, pickerSec = 1500, swInt, swTime = 0, cur = '0';
     let currentRoomId = null;
     let unsubscribeChat = null;
+
+    // ブラウザ固有の端末IDを生成して「部屋の主」判定に使う
+    let myDeviceToken = localStorage.getItem('my_device_token');
+    if (!myDeviceToken) {
+      myDeviceToken = 'user_' + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('my_device_token', myDeviceToken);
+    }
 
     const alarmAudio = new Audio('alarm.mp3');
     alarmAudio.loop = true;
@@ -626,9 +636,14 @@
         return;
       }
 
-      await roomRef.set({ password: password });
+      // 部屋を作成し、作成者のトークンを保存
+      await roomRef.set({
+        password: password,
+        ownerToken: myDeviceToken,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
       alert('部屋を作成しました！入室します。');
-      enterRoom(roomId);
+      enterRoom(roomId, true);
     }
 
     async function joinRoom() {
@@ -651,14 +666,22 @@
         return;
       }
 
-      enterRoom(roomId);
+      const isOwner = (doc.data().ownerToken === myDeviceToken);
+      enterRoom(roomId, isOwner);
     }
 
-    function enterRoom(roomId) {
+    function enterRoom(roomId, isOwner) {
       currentRoomId = roomId;
       $('room-login-area').style.display = 'none';
       $('chat-main-area').style.display = 'flex';
       $('chat-header-title').innerText = `💬 部屋: ${roomId}`;
+
+      // 主（オーナー）の場合のみ削除ボタンを表示
+      if (isOwner) {
+        $('delete-room-btn').style.display = 'block';
+      } else {
+        $('delete-room-btn').style.display = 'none';
+      }
 
       // 既存のリスナーがあれば解除
       if (unsubscribeChat) unsubscribeChat();
@@ -673,7 +696,7 @@
             const data = doc.data();
             const div = document.createElement('div');
             div.className = 'chat-msg-item';
-            div.innerHTML = `<strong>${escapeHTML(data.name)}:</strong> ${escapeHTML(data.text)}`;
+            div.innerHTML = `<strong>${escapeHTML(data.name || '名無し')}:</strong> ${escapeHTML(data.text || '')}`;
             chatMessages.appendChild(div);
           });
           chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -691,6 +714,32 @@
       $('chat-header-title').innerText = '💬 チャットルーム (未入室)';
       $('room-id-input').value = '';
       $('room-pass-input').value = '';
+      $('delete-room-btn').style.display = 'none';
+    }
+
+    async function deleteRoom() {
+      if (!currentRoomId) return;
+      if (!confirm('本当にこの部屋を削除しますか？中のメッセージもすべて消去されます。')) return;
+
+      try {
+        const roomRef = db.collection('rooms').doc(currentRoomId);
+        
+        // まず中のメッセージをすべて取得して削除
+        const messagesSnapshot = await roomRef.collection('messages').get();
+        const batch = db.batch();
+        messagesSnapshot.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+        // ルーム本体も削除
+        batch.delete(roomRef);
+        await batch.commit();
+
+        alert('部屋を削除しました。');
+        leaveRoom();
+      } catch (error) {
+        console.error("部屋の削除に失敗しました: ", error);
+        alert('部屋の削除に失敗しました。');
+      }
     }
 
     function sendChatMessage() {
