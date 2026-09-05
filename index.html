@@ -1,13 +1,409 @@
-<html>
-    <head>
-    </head>
-    <script>
-    </script>
-    <style>
-        
-    </style>
-    <body>
-        <h1>多用途時計</h1>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>便利時計</title>
+  <style>
+    body {
+      background: url('bg.jpg') no-repeat center/cover fixed;
+      margin: 0;
+      font-family: sans-serif;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.2);
+      margin: 15px 0;
+    }
+    .timer-display {
+      font-size: 3.5rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+    .input-box {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+    }
+    .t-input {
+      width: 45px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid #fff;
+      color: #fff;
+      border-radius: 4px;
+      text-align: center;
+      font-size: 1rem;
+      padding: 2px;
+    }
+    .btn {
+      background: #4caf50;
+      border: none;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .btn-s {
+      background: #2196f3;
+    }
+    .date {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      opacity: 0.9;
+      margin-bottom: 2px;
+    }
+    .clock {
+      text-align: center;
+      font-size: 4rem;
+      font-weight: bold;
+      margin-top: 0;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    .container {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      padding: 35px;
+      border-radius: 16px;
+      width: 360px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    .menu-tab {
+      position: fixed;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.6);
+      padding: 10px 12px;
+      border-radius: 16px 0 0 16px;
+      cursor: pointer;
+      writing-mode: vertical-rl;
+      font-size: 0.95rem;
+      z-index: 15;
+    }
+    .sidebar {
+      position: fixed;
+      right: -340px;
+      top: 0;
+      width: 300px;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(15px);
+      padding: 20px;
+      box-sizing: border-box;
+      transition: right 0.3s;
+      z-index: 9;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      overflow-y: auto;
+    }
+    .sidebar.open {
+      right: 0;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+      align-self: flex-end;
+    }
+    .tool-card {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .tool-title {
+      font-size: 0.85rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 3px;
+    }
+    .note, .screen, .todo-in {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      color: #fff;
+      padding: 6px;
+      box-sizing: border-box;
+    }
+    .note {
+      height: 70px;
+      resize: none;
+    }
+    .screen {
+      text-align: right;
+      font-size: 1.1rem;
+      background: rgba(0, 0, 0, 0.3);
+      margin-bottom: 6px;
+    }
+    .c-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+    .c-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: #fff;
+      padding: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .sound-row, .todo-row, .row-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+    }
+    .todo-row {
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+    .todo-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 0.85rem;
+    }
+    .todo-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .del-link {
+      color: #ff6b6b;
+      cursor: pointer;
+    }
+    .w-count {
+      font-size: 0.75rem;
+      text-align: right;
+      opacity: 0.6;
+    }
+    .sw-disp {
+      font-size: 1.8rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .kiyaku {
+      font-size: 0.7rem;
+      text-align: center;
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="kiyaku" id="naiyo">
+    <p>※当サイトのすべてのサービスを一度でも使用した場合、利用規約に同意したものと見なします<br>※メモ等のデータは保存されません</p>
+  </div>
+
+  <div class="container" id="panel">
+    <div class="date" id="d-disp"></div>
+    <div class="clock" id="c-disp"></div>
+    <div class="divider"></div>
+    <div class="timer-display" id="t-clock">25:00</div>
+    <div class="input-box">
+      <input type="number" id="t-in" class="t-input" value="25"><span>分</span>
+      <button class="btn" onclick="setT()">セット</button>
+      <button class="btn btn-s" id="s-btn" onclick="runT()">スタート</button>
+    </div>
+  </div>
+
+  <div class="menu-tab" onclick="boxOpen()">⚙️ ツール</div>
+
+  <div class="sidebar" id="box">
+    <button class="close-btn" onclick="boxOpen()">✕</button>
+
+    <div class="tool-card">
+      <div class="tool-title">📝 メモ帳(β版)</div>
+      <textarea class="note" id="note" oninput="saveN()"></textarea>
+      <div class="w-count" id="w-count">0 文字</div>
+    </div>
+
+    <div class="tool-card">
+      <div class="tool-title">✅ やることリスト(β版)</div>
+      <div class="todo-row">
+        <input type="text" id="todo-input" class="todo-in">
+        <button class="btn" onclick="addTodo()">追加</button>
+      </div>
+      <ul id="todo-list" class="todo-list"></ul>
+    </div>
+
+    <div class="tool-card">
+      <div class="tool-title">⏱️ ストップウォッチ</div>
+      <div class="sw-disp" id="sw-clock">00:00.0</div>
+      <div style="display:flex;justify-content:center;gap:8px;">
+        <button class="btn" id="sw-btn" onclick="toggleSW()">スタート</button>
+        <button class="btn btn-s" onclick="resetSW()">リセット</button>
+      </div>
+    </div>
+
+    <div class="tool-card">
+      <div class="tool-title">🧮 電卓(β版)</div>
+      <input type="text" class="screen" id="screen" readonly value="0">
+      <div class="c-grid">
+        <button class="c-btn" onclick="press('C')">C</button>
+        <button class="c-btn" onclick="press('/')">÷</button>
+        <button class="c-btn" onclick="press('*')">×</button>
+        <button class="c-btn" onclick="press('-')">-</button>
+        <button class="c-btn" onclick="press('7')">7</button>
+        <button class="c-btn" onclick="press('8')">8</button>
+        <button class="c-btn" onclick="press('9')">9</button>
+        <button class="c-btn" onclick="press('+')">+</button>
+        <button class="c-btn" onclick="press('4')">4</button>
+        <button class="c-btn" onclick="press('5')">5</button>
+        <button class="c-btn" onclick="press('6')">6</button>
+        <button class="c-btn" onclick="press('=')">=</button>
+        <button class="c-btn" onclick="press('1')">1</button>
+        <button class="c-btn" onclick="press('2')">2</button>
+        <button class="c-btn" onclick="press('3')">3</button>
+        <button class="c-btn" onclick="press('0')">0</button>
+      </div>
+    </div>
+
+
+
+    <div class="tool-card">
+      <div class="tool-title">利用規約を必ずお読みください</div>
+      <p style="font-size:0.75rem; line-height:1.4; margin:0;">
         <p><a href="kiyaku,porisi-.html">利用規約・プライバシーポリシー</a></p>
-    </body>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let tInt, tLeft = 1500, swInt, swTime = 0, cur = '0', auds = {};
+
+    function boxOpen() {
+      $('box').classList.toggle('open');
+    }
+
+    function upClock() {
+      const n = new Date();
+      $('d-disp').innerText = n.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' });
+      $('c-disp').innerText = n.toLocaleTimeString('ja-JP', { hour12: false });
+    }
+    setInterval(upClock, 1000);
+    upClock();
+
+    function setT() {
+      tLeft = (parseInt($('t-in').value) || 25) * 60;
+      dispT();
+    }
+
+    function dispT() {
+      $('t-clock').innerText = `${Math.floor(tLeft / 60).toString().padStart(2, '0')}:${(tLeft % 60).toString().padStart(2, '0')}`;
+    }
+
+    function runT() {
+      if (tInt) {
+        clearInterval(tInt);
+        tInt = null;
+        $('s-btn').innerText = 'スタート';
+      } else {
+        $('s-btn').innerText = '一時停止';
+        tInt = setInterval(() => {
+          if (tLeft > 0) {
+            tLeft--;
+            dispT();
+          } else {
+            clearInterval(tInt);
+            tInt = null;
+            $('s-btn').innerText = 'スタート';
+            alert('時間です！');
+          }
+        }, 1000);
+      }
+    }
+
+    function saveN() {
+      $('w-count').innerText = `${$('note').value.length} 文字`;
+    }
+
+    function addTodo() {
+      const i = $('todo-input');
+      if (!i.value.trim()) return;
+      const li = document.createElement('li');
+      li.className = 'todo-item';
+      li.innerHTML = `<span>${i.value}</span><span class="del-link" onclick="this.parentElement.remove()">✕</span>`;
+      $('todo-list').appendChild(li);
+      i.value = '';
+    }
+
+    function toggleSW() {
+      const b = $('sw-btn');
+      if (swInt) {
+        clearInterval(swInt);
+        swInt = null;
+        b.innerText = 'スタート';
+      } else {
+        b.innerText = 'ストップ';
+        swInt = setInterval(() => {
+          swTime += 100;
+          const ts = Math.floor(swTime / 1000);
+          $('sw-clock').innerText = `${Math.floor(ts / 60).toString().padStart(2, '0')}:${(ts % 60).toString().padStart(2, '0')}.${Math.floor((swTime % 1000) / 100)}`;
+        }, 100);
+      }
+    }
+
+    function resetSW() {
+      clearInterval(swInt);
+      swInt = null;
+      swTime = 0;
+      $('sw-clock').innerText = '00:00.0';
+      $('sw-btn').innerText = 'スタート';
+    }
+
+    function press(v) {
+      if (v === 'C') {
+        cur = '0';
+      } else if (v === '=') {
+        try {
+          cur = eval(cur.replace(/×/g, '*').replace(/÷/g, '/')).toString();
+        } catch {
+          cur = 'Error';
+        }
+      } else {
+        cur = cur === '0' && !isNaN(v) ? v : cur + v;
+      }
+      $('screen').value = cur;
+    }
+
+    function playAudio(id, src) {
+      const b = $(`btn-audio${id}`);
+      if (!auds[id]) {
+        auds[id] = new Audio(src);
+        auds[id].loop = true;
+      }
+      if (auds[id].paused) {
+        auds[id].play().catch(() => {});
+        b.innerText = '停止';
+      } else {
+        auds[id].pause();
+        b.innerText = '再生';
+      }
+    }
+  </script>
+</body>
 </html>
