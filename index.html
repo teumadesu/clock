@@ -2,17 +2,21 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>便利時計</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <style>
     body {
       background: url('bg.jpg') no-repeat center/cover fixed;
       margin: 0;
       font-family: sans-serif;
       color: #fff;
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
+      box-sizing: border-box;
     }
     .divider {
       height: 1px;
@@ -28,9 +32,10 @@
     }
     .input-box {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       justify-content: center;
       align-items: center;
+      flex-wrap: wrap;
     }
     .t-input {
       width: 45px;
@@ -41,6 +46,25 @@
       text-align: center;
       font-size: 1rem;
       padding: 2px;
+    }
+    .preset-box {
+      display: flex;
+      gap: 5px;
+      justify-content: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .preset-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .preset-btn:active {
+      background: rgba(255, 255, 255, 0.4);
     }
     .btn {
       background: #4caf50;
@@ -75,7 +99,9 @@
       padding: 35px;
       border-radius: 16px;
       width: 360px;
+      max-width: 90vw;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      box-sizing: border-box;
     }
     .menu-tab {
       position: fixed;
@@ -95,6 +121,7 @@
       right: -340px;
       top: 0;
       width: 300px;
+      max-width: 85vw;
       height: 100vh;
       background: rgba(0, 0, 0, 0.85);
       backdrop-filter: blur(15px);
@@ -130,7 +157,7 @@
       border-bottom: 1px solid rgba(255, 255, 255, 0.2);
       padding-bottom: 3px;
     }
-    .note, .screen, .todo-in {
+    .note, .screen, .todo-in, .chat-in {
       width: 100%;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
@@ -163,15 +190,13 @@
       cursor: pointer;
       font-size: 0.85rem;
     }
-    .sound-row, .todo-row, .row-flex {
+    .todo-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.8rem;
-    }
-    .todo-row {
       gap: 5px;
       margin-bottom: 8px;
+      font-size: 0.8rem;
     }
     .todo-list {
       list-style: none;
@@ -200,6 +225,30 @@
       text-align: center;
       margin-bottom: 6px;
     }
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chat-messages {
+      height: 120px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      padding: 6px;
+      overflow-y: auto;
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .chat-input-row {
+      display: flex;
+      gap: 4px;
+    }
+    .chat-msg-item {
+      word-break: break-all;
+    }
     .kiyaku {
       font-size: 0.7rem;
       text-align: center;
@@ -208,6 +257,28 @@
       left: 50%;
       transform: translateX(-50%);
       opacity: 0.8;
+      width: 90%;
+    }
+    @media (max-width: 480px) {
+      .container {
+        padding: 20px;
+        width: 100%;
+        border-radius: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.65);
+      }
+      .clock {
+        font-size: 3.2rem;
+      }
+      .timer-display {
+        font-size: 3rem;
+      }
+      .kiyaku {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -222,10 +293,19 @@
     <div class="clock" id="c-disp"></div>
     <div class="divider"></div>
     <div class="timer-display" id="t-clock">25:00</div>
+    <div class="preset-box">
+      <button class="preset-btn" onclick="addTime(30)">+30秒</button>
+      <button class="preset-btn" onclick="addTime(60)">+1分</button>
+      <button class="preset-btn" onclick="addTime(300)">+5分</button>
+      <button class="preset-btn" onclick="addTime(600)">+10分</button>
+      <button class="preset-btn" onclick="resetTimerInput()">リセット</button>
+    </div>
     <div class="input-box">
-      <input type="number" id="t-in" class="t-input" value="25"><span>分</span>
+      <input type="number" id="t-min" class="t-input" value="25" min="0"><span>分</span>
+      <input type="number" id="t-sec" class="t-input" value="0" min="0" max="59"><span>秒</span>
       <button class="btn" onclick="setT()">セット</button>
       <button class="btn btn-s" id="s-btn" onclick="runT()">スタート</button>
+      <button class="btn" style="background:#e91e63; display:none;" id="stop-alarm-btn" onclick="stopAlarm()">音を止める</button>
     </div>
   </div>
 
@@ -233,6 +313,18 @@
 
   <div class="sidebar" id="box">
     <button class="close-btn" onclick="boxOpen()">✕</button>
+
+    <div class="tool-card">
+      <div class="tool-title">💬 チャット(β版)</div>
+      <div class="chat-container">
+        <div id="chat-messages" class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-name" class="chat-in" placeholder="名前" style="width: 30%;">
+          <input type="text" id="chat-text" class="chat-in" placeholder="メッセージ" style="width: 50%;">
+          <button class="btn" onclick="sendChatMessage()">送信</button>
+        </div>
+      </div>
+    </div>
 
     <div class="tool-card">
       <div class="tool-title">📝 メモ帳(β版)</div>
@@ -281,19 +373,33 @@
       </div>
     </div>
 
-
-
     <div class="tool-card">
       <div class="tool-title">利用規約を必ずお読みください</div>
       <p style="font-size:0.75rem; line-height:1.4; margin:0;">
-        <p><a href="kiyaku,porisi-.html">利用規約・プライバシーポリシー</a></p>
+        <a href="kiyaku,porisi-.html" style="color: #fff;">利用規約・プライバシーポリシー</a>
       </p>
     </div>
   </div>
 
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDoiks0JByNZN4zkT4F-trhHw_ysa6LPSY",
+      authDomain: "clock-a1f74.firebaseapp.com",
+      projectId: "clock-a1f74",
+      storageBucket: "clock-a1f74.firebasestorage.app",
+      messagingSenderId: "750778260472",
+      appId: "1:750778260472:web:74ce3a4c5d1bef190a140d",
+      measurementId: "G-ZL3Y106PN4"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
     const $ = id => document.getElementById(id);
     let tInt, tLeft = 1500, swInt, swTime = 0, cur = '0', auds = {};
+
+    const alarmAudio = new Audio('alarm.mp3');
+    alarmAudio.loop = true;
 
     function boxOpen() {
       $('box').classList.toggle('open');
@@ -308,8 +414,42 @@
     upClock();
 
     function setT() {
-      tLeft = (parseInt($('t-in').value) || 25) * 60;
+      if (tInt) {
+        clearInterval(tInt);
+        tInt = null;
+        $('s-btn').innerText = 'スタート';
+      }
+      const m = parseInt($('t-min').value) || 0;
+      const s = parseInt($('t-sec').value) || 0;
+      tLeft = (m * 60) + s;
       dispT();
+    }
+
+    function addTime(secs) {
+      if (tInt) {
+        clearInterval(tInt);
+        tInt = null;
+        $('s-btn').innerText = 'スタート';
+      }
+      tLeft += secs;
+      updateInputsFromTLeft();
+      dispT();
+    }
+
+    function resetTimerInput() {
+      if (tInt) {
+        clearInterval(tInt);
+        tInt = null;
+        $('s-btn').innerText = 'スタート';
+      }
+      tLeft = 0;
+      updateInputsFromTLeft();
+      dispT();
+    }
+
+    function updateInputsFromTLeft() {
+      $('t-min').value = Math.floor(tLeft / 60);
+      $('t-sec').value = tLeft % 60;
     }
 
     function dispT() {
@@ -322,19 +462,36 @@
         tInt = null;
         $('s-btn').innerText = 'スタート';
       } else {
+        if (tLeft <= 0) {
+          setT();
+        }
+        if (tLeft <= 0) return;
         $('s-btn').innerText = '一時停止';
         tInt = setInterval(() => {
           if (tLeft > 0) {
             tLeft--;
             dispT();
+            updateInputsFromTLeft();
           } else {
             clearInterval(tInt);
             tInt = null;
             $('s-btn').innerText = 'スタート';
+            
+            alarmAudio.play().catch(error => {
+              console.log("音声の自動再生がブロックされました:", error);
+            });
+            $('stop-alarm-btn').style.display = 'inline-block';
+            
             alert('時間です！');
           }
         }, 1000);
       }
+    }
+
+    function stopAlarm() {
+      alarmAudio.pause();
+      alarmAudio.currentTime = 0;
+      $('stop-alarm-btn').style.display = 'none';
     }
 
     function saveN() {
@@ -390,19 +547,52 @@
       $('screen').value = cur;
     }
 
-    function playAudio(id, src) {
-      const b = $(`btn-audio${id}`);
-      if (!auds[id]) {
-        auds[id] = new Audio(src);
-        auds[id].loop = true;
-      }
-      if (auds[id].paused) {
-        auds[id].play().catch(() => {});
-        b.innerText = '停止';
-      } else {
-        auds[id].pause();
-        b.innerText = '再生';
-      }
+    function sendChatMessage() {
+      const nameInput = $('chat-name');
+      const textInput = $('chat-text');
+      
+      const name = nameInput.value.trim() || '名無し';
+      const text = textInput.value.trim();
+      
+      if (!text) return;
+
+      db.collection('messages').add({
+        name: name,
+        text: text,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      })
+      .then(() => {
+        textInput.value = '';
+      })
+      .catch((error) => {
+        console.error("送信エラー: ", error);
+      });
+    }
+
+    db.collection('messages').orderBy('createdAt', 'asc').onSnapshot((snapshot) => {
+      const chatMessages = $('chat-messages');
+      chatMessages.innerHTML = '';
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const div = document.createElement('div');
+        div.className = 'chat-msg-item';
+        div.innerHTML = `<strong>${escapeHTML(data.name)}:</strong> ${escapeHTML(data.text)}`;
+        chatMessages.appendChild(div);
+      });
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+
+    function escapeHTML(str) {
+      return str.replace(/[&'`<>"]/g, (match) => {
+        return {
+          '&': '&amp;',
+          "'": '&#x27;',
+          '`': '&#x60;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+        }[match];
+      });
     }
   </script>
 </body>
