@@ -1,214 +1,855 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>マルチツールダッシュボード</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            background-color: #f4f4f9;
-            color: #333;
-        }
-        /* ツールバーのスタイル */
-        .toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #2c3e50;
-            color: white;
-            padding: 10px 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .toolbar h1 {
-            font-size: 1.2rem;
-            margin: 0;
-        }
-        .toolbar-controls {
-            display: flex;
-            gap: 10px;
-        }
-        .btn {
-            background-color: #34495e;
-            color: white;
-            border: 1px solid #7f8c8d;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background 0.2s;
-        }
-        .btn:hover {
-            background-color: #415b76;
-        }
-        /* スリープ防止ONのときのボタンスタイル */
-        .btn.active {
-            background-color: #27ae60;
-            border-color: #2ecc71;
-        }
-        /* メインコンテンツエリア */
-        .container {
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-            text-align: center;
-        }
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-        }
-        input, button.action-btn {
-            padding: 10px;
-            font-size: 1rem;
-            margin-top: 10px;
-        }
-        .status-text {
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 5px;
-        }
-    </style>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>便利時計</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      background: url('bg.jpg') no-repeat center/cover fixed;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    .divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.2);
+      margin: 15px 0;
+    }
+    .timer-display {
+      font-size: 3.5rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 15px;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+    .time-picker {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    .time-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .picker-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      width: 36px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background 0.2s;
+    }
+    .picker-btn:active {
+      background: rgba(255, 255, 255, 0.4);
+    }
+    .picker-val {
+      font-size: 1.5rem;
+      font-weight: bold;
+      width: 36px;
+      text-align: center;
+    }
+    .picker-label {
+      font-size: 0.75rem;
+      opacity: 0.8;
+    }
+    .input-box {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+    }
+    .btn {
+      background: #388e3c;
+      border: none;
+      color: #fff;
+      padding: 9px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    .btn-s {
+      background: #1976d2;
+    }
+    .date {
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: 500;
+      opacity: 0.9;
+      margin-bottom: 2px;
+    }
+    .clock {
+      text-align: center;
+      font-size: 3.8rem;
+      font-weight: 700;
+      margin-top: 0;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+    .container {
+      background: rgba(20, 20, 20, 0.45);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 30px;
+      border-radius: 20px;
+      width: 360px;
+      max-width: 90vw;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      box-sizing: border-box;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .menu-tab {
+      position: fixed;
+      right: 0;
+      top: 42%;
+      transform: translateY(-50%);
+      background: rgba(30, 30, 30, 0.75);
+      backdrop-filter: blur(6px);
+      padding: 12px 10px;
+      border-radius: 12px 0 0 12px;
+      cursor: pointer;
+      writing-mode: vertical-rl;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      z-index: 15;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-right: none;
+    }
+    .timer-tab {
+      position: fixed;
+      right: 0;
+      top: 58%;
+      transform: translateY(-50%);
+      background: rgba(25, 118, 210, 0.75);
+      backdrop-filter: blur(6px);
+      padding: 12px 10px;
+      border-radius: 12px 0 0 12px;
+      cursor: pointer;
+      writing-mode: vertical-rl;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      z-index: 15;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-right: none;
+    }
+    .sidebar {
+      position: fixed;
+      right: -340px;
+      top: 0;
+      width: 310px;
+      max-width: 85vw;
+      height: 100vh;
+      background: rgba(18, 18, 18, 0.9);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 20px;
+      box-sizing: border-box;
+      transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      overflow-y: auto;
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .sidebar.open {
+      right: 0;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.4rem;
+      cursor: pointer;
+      align-self: flex-end;
+      opacity: 0.8;
+    }
+    .close-btn:hover {
+      opacity: 1;
+    }
+    .tool-card {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .tool-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      padding-bottom: 4px;
+    }
+    .note, .screen, .todo-in, .chat-in {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      color: #fff;
+      padding: 7px;
+      box-sizing: border-box;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    .note:focus, .todo-in:focus, .chat-in:focus {
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+    .note {
+      height: 70px;
+      resize: none;
+    }
+    .screen {
+      text-align: right;
+      font-size: 1.1rem;
+      background: rgba(0, 0, 0, 0.2);
+      margin-bottom: 6px;
+    }
+    .c-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+    }
+    .c-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.15s;
+    }
+    .c-btn:active {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .todo-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .todo-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 0.85rem;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+    .todo-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .del-link {
+      color: #e57373;
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 2px 6px;
+    }
+    .w-count {
+      font-size: 0.75rem;
+      text-align: right;
+      opacity: 0.6;
+      margin-top: 4px;
+    }
+    .sw-disp {
+      font-size: 1.8rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chat-messages {
+      height: 130px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      padding: 6px;
+      overflow-y: auto;
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .chat-input-row {
+      display: flex;
+      gap: 4px;
+    }
+    .chat-msg-item {
+      word-break: break-all;
+      line-height: 1.3;
+    }
+    .kiyaku {
+      font-size: 0.7rem;
+      text-align: center;
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0.75;
+      width: 90%;
+      pointer-events: none;
+    }
+    @media (max-width: 480px) {
+      body {
+        align-items: center;
+      }
+      .container {
+        padding: 24px;
+        width: 90vw;
+        border-radius: 18px;
+      }
+      .clock {
+        font-size: 3.2rem;
+      }
+      .timer-display {
+        font-size: 2.8rem;
+      }
+      .kiyaku {
+        display: none;
+      }
+    }
+  </style>
 </head>
 <body>
 
-    <!-- ツールバー -->
-    <header class="toolbar">
-        <h1>Multi Tool</h1>
-        <div class="toolbar-controls">
-            <!-- スリープ防止切り替えボタン -->
-            <button id="wakeLockBtn" class="btn" onclick="toggleWakeLock()">スリープ防止: OFF</button>
-            <!-- 通知テストボタン -->
-            <button class="btn" onclick="triggerTestNotification()">通知テスト</button>
+  <div class="kiyaku" id="naiyo">
+    <p>※当サイトのサービスを利用した場合、利用規約に同意したものと見なします</p>
+  </div>
+
+  <div class="container" id="panel">
+    <div class="date" id="d-disp"></div>
+    <div class="clock" id="c-disp"></div>
+    <div class="divider"></div>
+    <div class="timer-display" id="t-clock">25:00</div>
+    
+    <div class="input-box">
+      <button class="btn btn-s" id="s-btn" onclick="runT()">スタート</button>
+      <button class="btn" style="background:#c2185b; display:none;" id="stop-alarm-btn" onclick="stopAlarm()">音を止める</button>
+    </div>
+  </div>
+
+  <div class="menu-tab" onclick="boxOpen()">ツール</div>
+  <div class="timer-tab" onclick="timerBoxOpen()">タイマー設定</div>
+
+  <div class="sidebar" id="box">
+    <button class="close-btn" onclick="boxOpen()">✕</button>
+
+    <div class="tool-card">
+      <div class="tool-title" id="chat-header-title">チャット (未入室)[β]</div>
+      
+      <div id="room-login-area" style="display:flex; flex-direction:column; gap:6px;">
+        <input type="text" id="room-id-input" class="chat-in" placeholder="部屋ID">
+        <input type="password" id="room-pass-input" class="chat-in" placeholder="パスワード">
+        <div style="display:flex; gap:4px; margin-top:2px;">
+          <button class="btn" style="flex:1; font-size:0.8rem;" onclick="createRoom()">部屋を作成</button>
+          <button class="btn btn-s" style="flex:1; font-size:0.8rem;" onclick="joinRoom()">部屋に入る</button>
         </div>
-    </header>
+      </div>
 
-    <!-- メインコンテンツ（時計・タイマー等の置き場） -->
-    <main class="container">
-        <div class="card">
-            <h2>ダッシュボード</h2>
-            <p>ツールバーから「スリープ防止」をONにすると、画面が暗くなるのを防げます。</p>
-            <p class="status-text" id="wakeLockStatus">現在の状態: スリープ有効（通常）</p>
+      <div class="chat-container" id="chat-main-area" style="display:none; margin-top:4px;">
+        <div id="chat-messages" class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-name" class="chat-in" placeholder="名前" style="width: 30%;">
+          <input type="text" id="chat-text" class="chat-in" placeholder="メッセージ" style="width: 50%;">
+          <button class="btn" style="padding: 7px 12px;" onclick="sendChatMessage()">送信</button>
         </div>
-
-        <div class="card">
-            <h2>アラーム / タイマーのテスト</h2>
-            <p>指定時間後に通知を送るテストができます。</p>
-            <button class="action-btn" onclick="setTestTimer()">5秒後に通知を送る</button>
+        <div style="display:flex; gap:4px; margin-top:4px;">
+          <button class="btn" style="background:#d32f2f; flex:1; font-size:0.75rem;" onclick="leaveRoom()">部屋を出る</button>
+          <button class="btn" style="background:#b71c1c; flex:1; font-size:0.75rem; display:none;" id="delete-room-btn" onclick="deleteRoom()">部屋を削除</button>
         </div>
-    </main>
+      </div>
+    </div>
 
-    <script>
-        // ==========================================
-        // 1. スリープ防止機能 (Wake Lock API)
-        // ==========================================
-        let wakeLock = null;
+    <div class="tool-card">
+      <div class="tool-title">メモ帳 (不安定)</div>
+      <textarea class="note" id="note" oninput="saveN()"></textarea>
+      <div class="w-count" id="w-count">0 文字</div>
+    </div>
 
-        async function toggleWakeLock() {
-            const btn = document.getElementById('wakeLockBtn');
-            const statusText = document.getElementById('wakeLockStatus');
+    <div class="tool-card">
+      <div class="tool-title">やることリスト </div>
+      <div class="todo-row">
+        <input type="text" id="todo-input" class="todo-in" placeholder="新しいタスク...">
+        <button class="btn" style="padding: 7px 12px;" onclick="addTodo()">追加</button>
+      </div>
+      <ul id="todo-list" class="todo-list"></ul>
+    </div>
 
-            if (wakeLock !== null) {
-                // すでに有効なら解除する
-                await releaseWakeLock();
-                return;
-            }
+    <div class="tool-card">
+      <div class="tool-title">ストップウォッチ</div>
+      <div class="sw-disp" id="sw-clock">00:00.0</div>
+      <div style="display:flex;justify-content:center;gap:8px;">
+        <button class="btn" id="sw-btn" onclick="toggleSW()">スタート</button>
+        <button class="btn btn-s" onclick="resetSW()">リセット</button>
+      </div>
+    </div>
 
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    
-                    // UIをON状態に変更
-                    btn.textContent = 'スリープ防止: ON';
-                    btn.classList.add('active');
-                    statusText.textContent = '現在の状態: スリープ防止中（画面は消えません）';
-                    console.log('スリープ防止が有効になりました');
+    <div class="tool-card">
+      <div class="tool-title">電卓</div>
+      <input type="text" class="screen" id="screen" readonly value="0">
+      <div class="c-grid">
+        <button class="c-btn" onclick="press('C')">C</button>
+        <button class="c-btn" onclick="press('/')">÷</button>
+        <button class="c-btn" onclick="press('*')">×</button>
+        <button class="c-btn" onclick="press('-')">-</button>
+        <button class="c-btn" onclick="press('7')">7</button>
+        <button class="c-btn" onclick="press('8')">8</button>
+        <button class="c-btn" onclick="press('9')">9</button>
+        <button class="c-btn" onclick="press('+')">+</button>
+        <button class="c-btn" onclick="press('4')">4</button>
+        <button class="c-btn" onclick="press('5')">5</button>
+        <button class="c-btn" onclick="press('6')">6</button>
+        <button class="c-btn" onclick="press('=')">=</button>
+        <button class="c-btn" onclick="press('1')">1</button>
+        <button class="c-btn" onclick="press('2')">2</button>
+        <button class="c-btn" onclick="press('3')">3</button>
+        <button class="c-btn" onclick="press('0')">0</button>
+      </div>
+    </div>
 
-                    // 画面の最小化やタブ切り替えなどで自動解除された場合のイベント
-                    wakeLock.addEventListener('release', () => {
-                        wakeLock = null;
-                        btn.textContent = 'スリープ防止: OFF';
-                        btn.classList.remove('active');
-                        statusText.textContent = '現在の状態: スリープ有効（通常）';
-                        console.log('スリープ防止が自動解除されました');
-                    });
-                } else {
-                    alert('このブラウザはスリープ防止機能（Wake Lock）をサポートしていません。');
-                }
-            } catch (err) {
-                console.error(`スリープ防止の取得失敗: ${err.name}, ${err.message}`);
-                alert('スリープ防止の有効化失敗');
-            }
+    <div class="tool-card" style="text-align: center;">
+      <a href="kiyaku,porisi-.html" style="color: #bbb; font-size: 0.75rem; text-decoration: none;">利用規約・プライバシーポリシー</a>
+    </div>
+  </div>
+
+  <div class="sidebar" id="timer-box">
+    <button class="close-btn" onclick="timerBoxOpen()">✕</button>
+    <div class="tool-card">
+      <div class="tool-title">タイマー設定</div>
+      <div class="time-picker" style="margin: 15px 0;">
+        <div class="time-col">
+          <button class="picker-btn" onclick="adjustTime(600)">▲</button>
+          <span class="picker-val" id="p-min10">2</span>
+          <button class="picker-btn" onclick="adjustTime(-600)">▼</button>
+          <span class="picker-label">10分</span>
+        </div>
+        <div class="time-col">
+          <button class="picker-btn" onclick="adjustTime(60)">▲</button>
+          <span class="picker-val" id="p-min1">5</span>
+          <button class="picker-btn" onclick="adjustTime(-60)">▼</button>
+          <span class="picker-label">1分</span>
+        </div>
+        <div class="time-col">
+          <span style="font-size:1.5rem; font-weight:bold; height:28px; display:flex; align-items:center;">:</span>
+          <span style="height:28px;"></span>
+          <span style="height:28px;"></span>
+        </div>
+        <div class="time-col">
+          <button class="picker-btn" onclick="adjustTime(10)">▲</button>
+          <span class="picker-val" id="p-sec10">0</span>
+          <button class="picker-btn" onclick="adjustTime(-10)">▼</button>
+          <span class="picker-label">10秒</span>
+        </div>
+        <div class="time-col">
+          <button class="picker-btn" onclick="adjustTime(1)">▲</button>
+          <span class="picker-val" id="p-sec1">0</span>
+          <button class="picker-btn" onclick="adjustTime(-1)">▼</button>
+          <span class="picker-label">1秒</span>
+        </div>
+      </div>
+      <button class="btn" style="width:100%;" onclick="setT(); timerBoxOpen();">セットする</button>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDoiks0JByNZN4zkT4F-trhHw_ysa6LPSY",
+      authDomain: "clock-a1f74.firebaseapp.com",
+      projectId: "clock-a1f74",
+      storageBucket: "clock-a1f74.firebasestorage.app",
+      messagingSenderId: "750778260472",
+      appId: "1:750778260472:web:74ce3a4c5d1bef190a140d",
+      measurementId: "G-ZL3Y106PN4"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const $ = id => document.getElementById(id);
+    let tInt, tLeft = 1500, pickerSec = 1500, swInt, swTime = 0, cur = '0';
+    let currentRoomId = null;
+    let unsubscribeChat = null;
+
+    let myDeviceToken = localStorage.getItem('my_device_token');
+    if (!myDeviceToken) {
+      myDeviceToken = 'user_' + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('my_device_token', myDeviceToken);
+    }
+
+    const alarmAudio = new Audio('alarm.mp3');
+    alarmAudio.loop = true;
+
+    // ローカルストレージからのデータ復元（メモ・やることリスト）
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedNote = localStorage.getItem('app_note');
+      if (savedNote !== null) {
+        $('note').value = savedNote;
+        saveN();
+      }
+
+      const savedTodos = localStorage.getItem('app_todos');
+      if (savedTodos) {
+        try {
+          const todoListArray = JSON.parse(savedTodos);
+          todoListArray.forEach(text => appendTodoToDOM(text));
+        } catch(e) {}
+      }
+    });
+
+    function boxOpen() {
+      $('box').classList.toggle('open');
+    }
+
+    function timerBoxOpen() {
+      $('timer-box').classList.toggle('open');
+    }
+
+    function upClock() {
+      const n = new Date();
+      $('d-disp').innerText = n.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' });
+      $('c-disp').innerText = n.toLocaleTimeString('ja-JP', { hour12: false });
+    }
+    setInterval(upClock, 1000);
+    upClock();
+
+    function updatePickerDisplay() {
+      if (pickerSec < 0) pickerSec = 0;
+      if (pickerSec > 5999) pickerSec = 5999;
+      const m = Math.floor(pickerSec / 60);
+      const s = pickerSec % 60;
+      $('p-min10').innerText = Math.floor(m / 10);
+      $('p-min1').innerText = m % 10;
+      $('p-sec10').innerText = Math.floor(s / 10);
+      $('p-sec1').innerText = s % 10;
+    }
+
+    function adjustTime(amount) {
+      if (tInt) {
+        clearInterval(tInt);
+        tInt = null;
+        $('s-btn').innerText = 'スタート';
+      }
+      pickerSec += amount;
+      updatePickerDisplay();
+    }
+
+    function setT() {
+      if (tInt) {
+        clearInterval(tInt);
+        tInt = null;
+        $('s-btn').innerText = 'スタート';
+      }
+      tLeft = pickerSec;
+      dispT();
+    }
+
+    function dispT() {
+      $('t-clock').innerText = `${Math.floor(tLeft / 60).toString().padStart(2, '0')}:${(tLeft % 60).toString().padStart(2, '0')}`;
+    }
+
+    function runT() {
+      if (tInt) {
+        clearInterval(tInt);
+        tInt = null;
+        $('s-btn').innerText = 'スタート';
+      } else {
+        if (tLeft <= 0) {
+          tLeft = pickerSec;
         }
-
-        async function releaseWakeLock() {
-            if (wakeLock !== null) {
-                await wakeLock.release();
-                wakeLock = null;
-            }
-            const btn = document.getElementById('wakeLockBtn');
-            const statusText = document.getElementById('wakeLockStatus');
-            btn.textContent = 'スリープ防止: OFF';
-            btn.classList.remove('active');
-            statusText.textContent = '現在の状態: スリープ有効（通常）';
-        }
-
-
-        // ==========================================
-        // 2. 通知機能 (Notifications)
-        // ==========================================
-        
-        // 初回またはボタン押下時に通知の許可をリクエスト
-        async function requestNotificationPermission() {
-            if (!('Notification' in window)) {
-                alert('このブラウザは通知をサポートしていません。');
-                return false;
-            }
-
-            if (Notification.permission === 'granted') {
-                return true;
-            }
-
-            if (Notification.permission !== 'denied') {
-                const permission = await Notification.requestPermission();
-                return permission === 'granted';
-            }
-
-            return false;
-        }
-
-        // 通知を送信する関数
-        async function sendNotification(title, body) {
-            const hasPermission = await requestNotificationPermission();
+        if (tLeft <= 0) return;
+        $('s-btn').innerText = '一時停止';
+        tInt = setInterval(() => {
+          if (tLeft > 0) {
+            tLeft--;
+            dispT();
+          } else {
+            clearInterval(tInt);
+            tInt = null;
+            $('s-btn').innerText = 'スタート';
             
-            if (hasPermission) {
-                const options = {
-                    body: body,
-                    icon: 'https://cdn-icons-png.flaticon.com/512/3236/3236375.png' // サンプルアイコン
-                };
-                
-                // 通知を表示
-                new Notification(title, options);
-            } else {
-                alert('通知の許可が得られませんでした。ブラウザの設定から通知を許可してください。');
-            }
-        }
+            alarmAudio.play().catch(error => {
+              console.log("音声自動再生ブロック:", error);
+            });
+            $('stop-alarm-btn').style.display = 'inline-block';
+            
+            alert('時間です！');
+          }
+        }, 1000);
+      }
+    }
 
-        // 通知テスト用ボタンから呼ばれる関数
-        function triggerTestNotification() {
-            sendNotification('マルチツール通知テスト', '通知機能が正常に動作しています！');
-        }
+    function stopAlarm() {
+      alarmAudio.pause();
+      alarmAudio.currentTime = 0;
+      $('stop-alarm-btn').style.display = 'none';
+    }
 
-        // 5秒後に通知を送るテストタイマー
-        function setTestTimer() {
-            alert('5秒後に通知を送ります。アプリを開いたまま、または裏画面にしてお待ちください。');
-            setTimeout(() => {
-                sendNotification('タイマー終了', '設定した時間が経過');
-            }, 5000);
+    // メモ帳保存（ローカルストレージ）
+    function saveN() {
+      const text = $('note').value;
+      localStorage.setItem('app_note', text);
+      $('w-count').innerText = `${text.length} 文字`;
+    }
+
+    // やることリスト操作・保存（ローカルストレージ）
+    function addTodo() {
+      const i = $('todo-input');
+      const val = i.value.trim();
+      if (!val) return;
+      
+      appendTodoToDOM(val);
+      saveTodosToLocalStorage();
+      i.value = '';
+    }
+
+    function appendTodoToDOM(text) {
+      const li = document.createElement('li');
+      li.className = 'todo-item';
+      li.innerHTML = `<span>${escapeHTML(text)}</span><span class="del-link" onclick="removeTodo(this)">✕</span>`;
+      $('todo-list').appendChild(li);
+    }
+
+    function removeTodo(element) {
+      element.parentElement.remove();
+      saveTodosToLocalStorage();
+    }
+
+    function saveTodosToLocalStorage() {
+      const items = [];
+      document.querySelectorAll('#todo-list .todo-item span').forEach(span => {
+        items.push(span.innerText);
+      });
+      localStorage.setItem('app_todos', JSON.stringify(items));
+    }
+
+    function toggleSW() {
+      const b = $('sw-btn');
+      if (swInt) {
+        clearInterval(swInt);
+        swInt = null;
+        b.innerText = 'スタート';
+      } else {
+        b.innerText = 'ストップ';
+        swInt = setInterval(() => {
+          swTime += 100;
+          const ts = Math.floor(swTime / 1000);
+          $('sw-clock').innerText = `${Math.floor(ts / 60).toString().padStart(2, '0')}:${(ts % 60).toString().padStart(2, '0')}.${Math.floor((swTime % 1000) / 100)}`;
+        }, 100);
+      }
+    }
+
+    function resetSW() {
+      clearInterval(swInt);
+      swInt = null;
+      swTime = 0;
+      $('sw-clock').innerText = '00:00.0';
+      $('sw-btn').innerText = 'スタート';
+    }
+
+    function press(v) {
+      if (v === 'C') {
+        cur = '0';
+      } else if (v === '=') {
+        try {
+          cur = eval(cur.replace(/×/g, '*').replace(/÷/g, '/')).toString();
+        } catch {
+          cur = 'Error';
         }
-    </script>
+      } else {
+        cur = cur === '0' && !isNaN(v) ? v : cur + v;
+      }
+      $('screen').value = cur;
+    }
+
+    // チャットルーム関連（Firebase）
+    async function createRoom() {
+      const roomId = $('room-id-input').value.trim();
+      const password = $('room-pass-input').value;
+      if (!roomId || !password) {
+        alert('部屋IDとパスワードを入力してください');
+        return;
+      }
+
+      const roomRef = db.collection('rooms').doc(roomId);
+      const doc = await roomRef.get();
+      if (doc.exists) {
+        alert('この部屋IDはすでに存在します。部屋に入るをお試しください。');
+        return;
+      }
+
+      await roomRef.set({
+        password: password,
+        ownerToken: myDeviceToken,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      alert('部屋を作成しました！入室します。');
+      enterRoom(roomId, true);
+    }
+
+    async function joinRoom() {
+      const roomId = $('room-id-input').value.trim();
+      const password = $('room-pass-input').value;
+      if (!roomId || !password) {
+        alert('部屋IDとパスワードを入力してください');
+        return;
+      }
+
+      const roomRef = db.collection('rooms').doc(roomId);
+      const doc = await roomRef.get();
+      if (!doc.exists) {
+        alert('指定された部屋が見つかりません');
+        return;
+      }
+
+      if (doc.data().password !== password) {
+        alert('パスワードが間違っています');
+        return;
+      }
+
+      const isOwner = (doc.data().ownerToken === myDeviceToken);
+      enterRoom(roomId, isOwner);
+    }
+
+    function enterRoom(roomId, isOwner) {
+      currentRoomId = roomId;
+      $('room-login-area').style.display = 'none';
+      $('chat-main-area').style.display = 'flex';
+      $('chat-header-title').innerText = `部屋: ${roomId}`;
+
+      if (isOwner) {
+        $('delete-room-btn').style.display = 'block';
+      } else {
+        $('delete-room-btn').style.display = 'none';
+      }
+
+      if (unsubscribeChat) unsubscribeChat();
+
+      unsubscribeChat = db.collection('rooms').doc(roomId).collection('messages')
+        .orderBy('createdAt', 'asc')
+        .onSnapshot((snapshot) => {
+          const chatMessages = $('chat-messages');
+          chatMessages.innerHTML = '';
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            const div = document.createElement('div');
+            div.className = 'chat-msg-item';
+            div.innerHTML = `<strong>${escapeHTML(data.name || '名無し')}:</strong> ${escapeHTML(data.text || '')}`;
+            chatMessages.appendChild(div);
+          });
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+    }
+
+    function leaveRoom() {
+      if (unsubscribeChat) {
+        unsubscribeChat();
+        unsubscribeChat = null;
+      }
+      currentRoomId = null;
+      $('chat-main-area').style.display = 'none';
+      $('room-login-area').style.display = 'flex';
+      $('chat-header-title').innerText = 'チャットルーム (未入室)';
+      $('room-id-input').value = '';
+      $('room-pass-input').value = '';
+      $('delete-room-btn').style.display = 'none';
+    }
+
+    async function deleteRoom() {
+      if (!currentRoomId) return;
+      if (!confirm('本当にこの部屋を削除しますか？中のメッセージもすべて消去されます。')) return;
+
+      try {
+        const roomRef = db.collection('rooms').doc(currentRoomId);
+        const messagesSnapshot = await roomRef.collection('messages').get();
+        const batch = db.batch();
+        messagesSnapshot.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+        batch.delete(roomRef);
+        await batch.commit();
+
+        alert('部屋を削除しました。');
+        leaveRoom();
+      } catch (error) {
+        console.error("削除エラー:", error);
+        alert('部屋の削除に失敗しました。');
+      }
+    }
+
+    function sendChatMessage() {
+      if (!currentRoomId) return;
+      const nameInput = $('chat-name');
+      const textInput = $('chat-text');
+      
+      const name = nameInput.value.trim() || '名無し';
+      const text = textInput.value.trim();
+      
+      if (!text) return;
+
+      db.collection('rooms').doc(currentRoomId).collection('messages').add({
+        name: name,
+        text: text,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      })
+      .then(() => {
+        textInput.value = '';
+      })
+      .catch((error) => {
+        console.error("送信エラー:", error);
+      });
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&'`<>"]/g, (match) => {
+        return {
+          '&': '&amp;',
+          "'": '&#x27;',
+          '`': '&#x60;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+        }[match];
+      });
+    }
+  </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('Service Worker 登録成功'));
+  }
+</script>
 </body>
 </html>
