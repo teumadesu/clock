@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#000000">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>便利時計</title>
@@ -16,9 +16,33 @@
       color: #fff;
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+    /* ツールバー（スリープ防止用ボタンなど） */
+    .app-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(18, 18, 18, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 10px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 10;
+    }
+    .toolbar-left {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    .toolbar-right {
+      display: flex;
+      gap: 8px;
+    }
+    .main-wrapper {
+      flex: 1;
+      display: flex;
       justify-content: center;
       align-items: center;
-      box-sizing: border-box;
     }
     .divider {
       height: 1px;
@@ -87,13 +111,18 @@
       cursor: pointer;
       font-size: 0.9rem;
       font-weight: 500;
-      transition: opacity 0.2s;
+      transition: background 0.2s, opacity 0.2s;
     }
     .btn:hover {
       opacity: 0.9;
     }
     .btn-s {
       background: #1976d2;
+    }
+    /* スリープ防止ボタンがONのときのスタイル */
+    .btn.wakelock-active {
+      background: #27ae60 !important;
+      border: 1px solid #2ecc71;
     }
     .date {
       text-align: center;
@@ -315,17 +344,15 @@
       font-size: 0.7rem;
       text-align: center;
       position: fixed;
-      top: 12px;
+      top: 55px;
       left: 50%;
       transform: translateX(-50%);
       opacity: 0.75;
       width: 90%;
       pointer-events: none;
+      z-index: 5;
     }
     @media (max-width: 480px) {
-      body {
-        align-items: center;
-      }
       .container {
         padding: 24px;
         width: 90vw;
@@ -345,19 +372,30 @@
 </head>
 <body>
 
+  <!-- 上部ツールバー（スリープ防止ボタンを追加） -->
+  <header class="app-toolbar">
+    <div class="toolbar-left">便利時計</div>
+    <div class="toolbar-right">
+      <button id="wakeLockBtn" class="btn" style="padding: 5px 10px; font-size: 0.8rem;" onclick="toggleWakeLock()">スリープ: OFF</button>
+      <button class="btn btn-s" style="padding: 5px 10px; font-size: 0.8rem;" onclick="triggerTestNotification()">通知テスト</button>
+    </div>
+  </header>
+
   <div class="kiyaku" id="naiyo">
     <p>※当サイトのサービスを利用した場合、利用規約に同意したものと見なします</p>
   </div>
 
-  <div class="container" id="panel">
-    <div class="date" id="d-disp"></div>
-    <div class="clock" id="c-disp"></div>
-    <div class="divider"></div>
-    <div class="timer-display" id="t-clock">25:00</div>
-    
-    <div class="input-box">
-      <button class="btn btn-s" id="s-btn" onclick="runT()">スタート</button>
-      <button class="btn" style="background:#c2185b; display:none;" id="stop-alarm-btn" onclick="stopAlarm()">音を止める</button>
+  <div class="main-wrapper">
+    <div class="container" id="panel">
+      <div class="date" id="d-disp"></div>
+      <div class="clock" id="c-disp"></div>
+      <div class="divider"></div>
+      <div class="timer-display" id="t-clock">25:00</div>
+      
+      <div class="input-box">
+        <button class="btn btn-s" id="s-btn" onclick="runT()">スタート</button>
+        <button class="btn" style="background:#c2185b; display:none;" id="stop-alarm-btn" onclick="stopAlarm()">音を止める</button>
+      </div>
     </div>
   </div>
 
@@ -529,6 +567,87 @@
       }
     });
 
+    // ==========================================
+    // 新機能 1: スリープ防止 (Wake Lock API)
+    // ==========================================
+    let wakeLock = null;
+
+    async function toggleWakeLock() {
+      const btn = $('wakeLockBtn');
+
+      if (wakeLock !== null) {
+        await releaseWakeLock();
+        return;
+      }
+
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          
+          btn.textContent = 'スリープ: ON';
+          btn.classList.add('wakelock-active');
+          console.log('スリープ防止が有効になりました');
+
+          // タブ切り替えや最小化等でOS側に解除された場合のイベント
+          wakeLock.addEventListener('release', () => {
+            wakeLock = null;
+            btn.textContent = 'スリープ: OFF';
+            btn.classList.remove('wakelock-active');
+            console.log('スリープ防止が自動解除されました');
+          });
+        } else {
+          alert('このブラウザはスリープ防止機能（Wake Lock）をサポートしていません。');
+        }
+      } catch (err) {
+        console.error(`スリープ防止の取得に失敗しました: ${err.name}, ${err.message}`);
+        alert('スリープ防止の有効化に失敗しました。');
+      }
+    }
+
+    async function releaseWakeLock() {
+      if (wakeLock !== null) {
+        await wakeLock.release();
+        wakeLock = null;
+      }
+      const btn = $('wakeLockBtn');
+      btn.textContent = 'スリープ: OFF';
+      btn.classList.remove('wakelock-active');
+    }
+
+
+    // ==========================================
+    // 新機能 2: 通知機能 (Notifications)
+    // ==========================================
+    async function requestNotificationPermission() {
+      if (!('Notification' in window)) {
+        return false;
+      }
+      if (Notification.permission === 'granted') {
+        return true;
+      }
+      if (Notification.permission !== 'denied') {
+        const permission = await Notification.requestPermission();
+        return permission === 'granted';
+      }
+      return false;
+    }
+
+    async function sendNotification(title, body) {
+      const hasPermission = await requestNotificationPermission();
+      if (hasPermission) {
+        const options = {
+          body: body,
+          icon: 'https://cdn-icons-png.flaticon.com/512/3236/3236375.png'
+        };
+        new Notification(title, options);
+      }
+    }
+
+    function triggerTestNotification() {
+      sendNotification('便利時計 通知テスト', '通知機能が正常に動作しています！');
+    }
+
+
     function boxOpen() {
       $('box').classList.toggle('open');
     }
@@ -605,6 +724,8 @@
             });
             $('stop-alarm-btn').style.display = 'inline-block';
             
+            // タイマー終了時に通知を送信
+            sendNotification('タイマー終了', '設定した時間が経過しました！');
             alert('時間です！');
           }
         }, 1000);
@@ -846,10 +967,10 @@
     }
   </script>
   <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log('Service Worker 登録成功'));
-  }
-</script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(() => console.log('Service Worker 登録成功'));
+    }
+  </script>
 </body>
 </html>
