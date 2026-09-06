@@ -19,7 +19,7 @@
       flex-direction: column;
       box-sizing: border-box;
     }
-    /* ツールバー（スリープ防止用ボタンなど） */
+    /* ツールバー */
     .app-toolbar {
       display: flex;
       justify-content: space-between;
@@ -372,12 +372,11 @@
 </head>
 <body>
 
-  <!-- 上部ツールバー（スリープ防止ボタンを追加） -->
+  <!-- 上部ツールバー（スリープ防止ボタンのみ配置） -->
   <header class="app-toolbar">
     <div class="toolbar-left">便利時計</div>
     <div class="toolbar-right">
       <button id="wakeLockBtn" class="btn" style="padding: 5px 10px; font-size: 0.8rem;" onclick="toggleWakeLock()">スリープ: OFF</button>
-      <button class="btn btn-s" style="padding: 5px 10px; font-size: 0.8rem;" onclick="triggerTestNotification()">通知テスト</button>
     </div>
   </header>
 
@@ -550,14 +549,16 @@
     const alarmAudio = new Audio('alarm.mp3');
     alarmAudio.loop = true;
 
-    // ローカルストレージからのデータ復元（メモ・やることリスト）
+    // 起動時の初期化処理（メモ・やることリスト・通知許可チェック）
     window.addEventListener('DOMContentLoaded', () => {
+      // 1. メモ帳の復元
       const savedNote = localStorage.getItem('app_note');
       if (savedNote !== null) {
         $('note').value = savedNote;
         saveN();
       }
 
+      // 2. やることリストの復元
       const savedTodos = localStorage.getItem('app_todos');
       if (savedTodos) {
         try {
@@ -565,10 +566,40 @@
           todoListArray.forEach(text => appendTodoToDOM(text));
         } catch(e) {}
       }
+
+      // 3. 通知の許可がされていなければ、毎回アプリ起動時に許可を要求する
+      checkAndRequestNotification();
     });
 
+    // 毎回アプリ起動時に通知許可を求める関数
+    async function checkAndRequestNotification() {
+      if (!('Notification' in window)) return;
+      
+      // まだ許可されていない（granted ではない）場合、毎回ポップアップを表示する
+      if (Notification.permission !== 'granted') {
+        try {
+          await Notification.requestPermission();
+        } catch (e) {
+          console.error("通知許可の要求に失敗しました", e);
+        }
+      }
+    }
+
+    // 任意のタイミングで通知を送信できる関数
+    function sendNotification(title, body) {
+      if (!('Notification' in window)) return;
+      
+      if (Notification.permission === 'granted') {
+        const options = {
+          body: body,
+          icon: 'https://cdn-icons-png.flaticon.com/512/3236/3236375.png'
+        };
+        new Notification(title, options);
+      }
+    }
+
     // ==========================================
-    // 新機能 1: スリープ防止 (Wake Lock API)
+    // スリープ防止 (Wake Lock API)
     // ==========================================
     let wakeLock = null;
 
@@ -586,21 +617,17 @@
           
           btn.textContent = 'スリープ: ON';
           btn.classList.add('wakelock-active');
-          console.log('スリープ防止が有効になりました');
 
-          // タブ切り替えや最小化等でOS側に解除された場合のイベント
           wakeLock.addEventListener('release', () => {
             wakeLock = null;
             btn.textContent = 'スリープ: OFF';
             btn.classList.remove('wakelock-active');
-            console.log('スリープ防止が自動解除されました');
           });
         } else {
-          alert('このブラウザはスリープ防止機能（Wake Lock）をサポートしていません。');
+          alert('このブラウザはスリープ防止機能をサポートしていません。');
         }
       } catch (err) {
-        console.error(`スリープ防止の取得に失敗しました: ${err.name}, ${err.message}`);
-        alert('スリープ防止の有効化に失敗しました。');
+        console.error(`スリープ防止の取得に失敗しました: ${err.message}`);
       }
     }
 
@@ -613,40 +640,6 @@
       btn.textContent = 'スリープ: OFF';
       btn.classList.remove('wakelock-active');
     }
-
-
-    // ==========================================
-    // 新機能 2: 通知機能 (Notifications)
-    // ==========================================
-    async function requestNotificationPermission() {
-      if (!('Notification' in window)) {
-        return false;
-      }
-      if (Notification.permission === 'granted') {
-        return true;
-      }
-      if (Notification.permission !== 'denied') {
-        const permission = await Notification.requestPermission();
-        return permission === 'granted';
-      }
-      return false;
-    }
-
-    async function sendNotification(title, body) {
-      const hasPermission = await requestNotificationPermission();
-      if (hasPermission) {
-        const options = {
-          body: body,
-          icon: 'https://cdn-icons-png.flaticon.com/512/3236/3236375.png'
-        };
-        new Notification(title, options);
-      }
-    }
-
-    function triggerTestNotification() {
-      sendNotification('便利時計 通知テスト', '通知機能が正常に動作しています！');
-    }
-
 
     function boxOpen() {
       $('box').classList.toggle('open');
@@ -724,7 +717,7 @@
             });
             $('stop-alarm-btn').style.display = 'inline-block';
             
-            // タイマー終了時に通知を送信
+            // タイマー終了時に通知を送信（ここで好きな通知を飛ばせます）
             sendNotification('タイマー終了', '設定した時間が経過しました！');
             alert('時間です！');
           }
@@ -738,14 +731,12 @@
       $('stop-alarm-btn').style.display = 'none';
     }
 
-    // メモ帳保存（ローカルストレージ）
     function saveN() {
       const text = $('note').value;
       localStorage.setItem('app_note', text);
       $('w-count').innerText = `${text.length} 文字`;
     }
 
-    // やることリスト操作・保存（ローカルストレージ）
     function addTodo() {
       const i = $('todo-input');
       const val = i.value.trim();
@@ -815,7 +806,6 @@
       $('screen').value = cur;
     }
 
-    // チャットルーム関連（Firebase）
     async function createRoom() {
       const roomId = $('room-id-input').value.trim();
       const password = $('room-pass-input').value;
