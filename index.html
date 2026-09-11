@@ -113,7 +113,6 @@
       box-sizing: border-box;
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
-    /* ステータスバー（次のアラーム・進行中タイマー表示） */
     .status-bar {
       background: rgba(0, 0, 0, 0.3);
       border-radius: 8px;
@@ -298,7 +297,6 @@
       text-align: center;
       margin-bottom: 8px;
     }
-    /* スイッチ用トグル */
     .switch-label {
       font-size: 0.75rem;
       display: flex;
@@ -315,8 +313,6 @@
   <header class="app-toolbar">
     <div class="toolbar-left">便利時計</div>
     <div class="toolbar-right">
-      <!-- インストールボタン（初期状態は非表示） -->
-      <button id="install-btn" class="btn" style="padding: 5px 10px; font-size: 0.8rem; display: none;" onclick="installPWA()">アプリをインストール</button>
       <button class="btn btn-s" style="padding: 5px 10px; font-size: 0.8rem;" onclick="manualSendNotification()">通知テスト</button>
       <button id="wakeLockBtn" class="btn" style="padding: 5px 10px; font-size: 0.8rem;" onclick="toggleWakeLock()">スリープ: OFF</button>
     </div>
@@ -324,7 +320,6 @@
 
   <div class="main-wrapper">
     <div class="container" id="panel">
-      <!-- 進行状況・次のアラーム表示ステータスバー -->
       <div class="status-bar">
         <div class="status-item">
           <span>⏰ 次のアラーム:</span>
@@ -351,8 +346,16 @@
   <div class="menu-tab" onclick="boxOpen()">ツール</div>
   <div class="timer-tab" onclick="timerBoxOpen()">タイマー設定</div>
 
+  <!-- ツールサイドバー -->
   <div class="sidebar" id="box">
     <button class="close-btn" onclick="boxOpen()">✕</button>
+
+    <!-- アプリインストールカード（初期状態は非表示、インストール可能な場合のみ表示） -->
+    <div class="tool-card" id="install-card" style="display: none;">
+      <div class="tool-title">アプリのインストール</div>
+      <p style="font-size: 0.8rem; margin: 0 0 10px 0; opacity: 0.85;">このアプリを端末にインストールして、ホーム画面からすばやく起動できます。</p>
+      <button class="btn" style="width: 100%;" onclick="installPWA()">インストールする</button>
+    </div>
 
     <!-- アラーム設定カード -->
     <div class="tool-card">
@@ -364,7 +367,7 @@
       <ul id="alarm-list" class="alarm-list"></ul>
     </div>
 
-    <!-- やることリストカード（通知ON/OFF機能付き） -->
+    <!-- やることリストカード -->
     <div class="tool-card">
       <div class="tool-title">
         やることリスト
@@ -379,7 +382,7 @@
       <ul id="todo-list" class="todo-list"></ul>
     </div>
 
-    <!-- メモ帳カード（通知ON/OFF機能付き） -->
+    <!-- メモ帳カード -->
     <div class="tool-card">
       <div class="tool-title">
         メモ帳
@@ -468,7 +471,6 @@
     const alarmAudio = new Audio('alarm.mp3');
     alarmAudio.loop = true;
 
-    // データ格納用配列
     let alarms = [];
     let notificationSettings = {
       todo: false,
@@ -481,45 +483,38 @@
     let deferredPrompt = null;
 
     window.addEventListener('beforeinstallprompt', (e) => {
-      // ブラウザ標準のインストールインフォバーを抑制
       e.preventDefault();
-      // イベントを保存しておく
       deferredPrompt = e;
-      // インストールボタンを表示する
-      $('install-btn').style.display = 'inline-block';
+      // ツールメニュー内のインストールカードを表示する
+      $('install-card').style.display = 'block';
     });
 
     async function installPWA() {
       if (!deferredPrompt) return;
-      // インストールプロンプトを表示
       deferredPrompt.prompt();
-      // ユーザーの選択結果を待つ
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
         console.log('ユーザーがPWAのインストールを承認しました');
       } else {
         console.log('ユーザーがPWAのインストールをキャンセルしました');
       }
-      // プロンプトは一度しか使えないためリセット
       deferredPrompt = null;
-      $('install-btn').style.display = 'none';
+      $('install-card').style.display = 'none';
     }
 
     window.addEventListener('appinstalled', () => {
-      $('install-btn').style.display = 'none';
+      $('install-card').style.display = 'none';
       deferredPrompt = null;
       console.log('PWAがインストールされました');
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-      // 1. メモ帳復元
       const savedNote = localStorage.getItem('app_note');
       if (savedNote !== null) {
         $('note').value = savedNote;
         saveN();
       }
 
-      // 2. やることリスト復元
       const savedTodos = localStorage.getItem('app_todos');
       if (savedTodos) {
         try {
@@ -528,7 +523,6 @@
         } catch(e){}
       }
 
-      // 3. アラーム復元
       const savedAlarms = localStorage.getItem('app_alarms');
       if (savedAlarms) {
         try {
@@ -537,7 +531,6 @@
         } catch(e){}
       }
 
-      // 4. 通知設定復元
       const savedNotifyPrefs = localStorage.getItem('app_notify_prefs');
       if (savedNotifyPrefs) {
         try {
@@ -561,7 +554,6 @@
       }
     }
 
-    // 手動で通知を送信する関数（「通知テスト」ボタンから呼び出し）
     function manualSendNotification() {
       sendNotification('便利時計からの通知', 'あなたが送信したテスト通知です！');
     }
@@ -582,9 +574,6 @@
       }
     }
 
-    // ==========================================
-    // アラーム機能・管理
-    // ==========================================
     function addAlarm() {
       const timeVal = $('alarm-time-input').value;
       if (!timeVal) {
@@ -616,8 +605,6 @@
     function renderAlarms() {
       const list = $('alarm-list');
       list.innerHTML = '';
-      
-      // 時刻順にソートして「次のアラーム」を算出するため
       alarms.sort((a, b) => a.time.localeCompare(b.time));
 
       alarms.forEach((alarm, index) => {
@@ -635,7 +622,6 @@
       updateNextAlarmDisplay();
     }
 
-    // 次のアラームをステータスバーに表示
     function updateNextAlarmDisplay() {
       const activeAlarms = alarms.filter(a => a.active);
       if (activeAlarms.length === 0) {
@@ -644,18 +630,13 @@
       }
       const now = new Date();
       const currentHm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-      
-      // 本来の現在時刻以降の最も近いアラームを探す
       let next = activeAlarms.find(a => a.time >= currentHm);
       if (!next) {
-        next = activeAlarms[0]; // なければ翌日の最初のアラーム
+        next = activeAlarms.0;
       }
       $('status-next-alarm').innerText = next.time + (next === activeAlarms[0] && next.time < currentHm ? ' (明日)' : '');
     }
 
-    // ==========================================
-    // 時計と毎秒のチェック処理
-    // ==========================================
     function upClock() {
       const n = new Date();
       const hours = String(n.getHours()).padStart(2, '0');
@@ -666,7 +647,6 @@
       $('d-disp').innerText = n.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' });
       $('c-disp').innerText = `${hours}:${minutes}:${seconds}`;
 
-      // 毎秒アラーム時刻チェック
       alarms.forEach(alarm => {
         if (alarm.active && alarm.time === currentHm && seconds === '00') {
           triggerAlarmEvent(alarm.time);
@@ -682,9 +662,6 @@
       sendNotification('アラーム発動！', `${timeStr} に設定したアラームの時間になりました。`);
     }
 
-    // ==========================================
-    // タイマー・ストップウォッチ関連
-    // ==========================================
     function updatePickerDisplay() {
       if (pickerSec < 0) pickerSec = 0;
       if (pickerSec > 5999) pickerSec = 5999;
@@ -759,9 +736,6 @@
       $('stop-alarm-btn').style.display = 'none';
     }
 
-    // ==========================================
-    // メモ・やることリスト（通知ON/OFF対応）
-    // ==========================================
     function toggleFeatureNotify(featureKey) {
       const isChecked = $(`${featureKey}-notify-toggle`).checked;
       notificationSettings[featureKey] = isChecked;
@@ -812,9 +786,6 @@
       localStorage.setItem('app_todos', JSON.stringify(items));
     }
 
-    // ==========================================
-    // その他のツール（ストップウォッチ・電卓・スリープ防止）
-    // ==========================================
     let wakeLock = null;
     async function toggleWakeLock() {
       const btn = $('wakeLockBtn');
