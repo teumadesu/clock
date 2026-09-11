@@ -301,7 +301,7 @@
       opacity: 0.9;
     }
     .terms-link {
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       color: #90caf9;
       text-decoration: underline;
       cursor: pointer;
@@ -309,12 +309,13 @@
       border: none;
       padding: 0;
       text-align: left;
+      display: inline-block;
     }
   </style>
 </head>
 <body>
 
-  <!-- 上部ツールバー（ボタンなし・タイトルのみ） -->
+  <!-- 上部ツールバー（タイトルのみ） -->
   <header class="app-toolbar">
     <div class="toolbar-left">便利時計</div>
   </header>
@@ -333,7 +334,7 @@
         </div>
       </div>
 
-      <!-- 時計の復元 -->
+      <!-- 時計・日付の表示（復元） -->
       <div class="date" id="d-disp"></div>
       <div class="clock" id="c-disp"></div>
       <div class="divider"></div>
@@ -350,28 +351,30 @@
   <div class="menu-tab" onclick="boxOpen()">ツール</div>
   <div class="timer-tab" onclick="timerBoxOpen()">タイマー設定</div>
 
-  <!-- ツールサイドバー（機能・設定系をすべてここに収納） -->
+  <!-- ツールサイドバー -->
   <div class="sidebar" id="box">
     <button class="close-btn" onclick="boxOpen()">✕</button>
 
-    <!-- アプリインストールカード（インストール可能な場合のみ表示） -->
+    <!-- アプリインストールカード -->
     <div class="tool-card" id="install-card" style="display: none;">
       <div class="tool-title">アプリのインストール</div>
       <p style="font-size: 0.8rem; margin: 0 0 10px 0; opacity: 0.85;">端末にインストールしてホーム画面から起動できます。</p>
       <button class="btn" style="width: 100%;" onclick="installPWA()">インストールする</button>
     </div>
 
-    <!-- アプリ設定・テスト系カード -->
+    <!-- システム設定・機能カード -->
     <div class="tool-card">
       <div class="tool-title">システム設定・機能</div>
-      <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
         <button class="btn btn-s" style="width: 100%; font-size: 0.85rem;" onclick="manualSendNotification()">通知テストを実行</button>
         <button id="wakeLockBtn" class="btn" style="width: 100%; font-size: 0.85rem;" onclick="toggleWakeLock()">スリープ防止: OFF</button>
-        <button class="terms-link" onclick="openTerms()">利用規約</button>
+        <div>
+          <a href="kiyaku,porisi-.html" class="terms-link">利用規約</a>
+        </div>
       </div>
     </div>
 
-    <!-- アラーム設定カード -->
+    <!-- アラーム機能カード -->
     <div class="tool-card">
       <div class="tool-title">アラーム機能</div>
       <div style="display:flex; gap:6px; margin-bottom:8px;">
@@ -491,9 +494,6 @@
       note: false
     };
 
-    // ==========================================
-    // PWA インストール関連の処理
-    // ==========================================
     let deferredPrompt = null;
 
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -582,7 +582,6 @@
       }
     }
 
-<a href="kiyaku,porisi-.html">利用規約</a>
     function addAlarm() {
       const timeVal = $('alarm-time-input').value;
       if (!timeVal) {
@@ -646,7 +645,6 @@
       $('status-next-alarm').innerText = next.time + (next === activeAlarms[0] && next.time < currentHm ? ' (明日)' : '');
     }
 
-    // 時計の更新処理
     function upClock() {
       const n = new Date();
       const hours = String(n.getHours()).padStart(2, '0');
